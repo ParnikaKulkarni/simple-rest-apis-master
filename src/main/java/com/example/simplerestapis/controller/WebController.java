@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.example.simplerestapis.models.RequestAdminLogin;
 import com.example.simplerestapis.models.RequestLogin;
 import com.example.simplerestapis.service.DatabaseConnection;
 
@@ -28,14 +29,10 @@ import io.swagger.annotations.ApiOperation;
 @RestController
 public class WebController {
 
-    // public RequestMap mp = new RequestMap();
-
     
     private static final Logger logger = LoggerFactory.getLogger(WebController.class);
 
-//	@Autowired
-//	@Qualifier("hiveJdbcTemplate")
-//	private JdbcTemplate hiveJdbcTemplate;
+
     
     @ApiOperation(value = "Home page")
     @GetMapping("/api1")
@@ -43,7 +40,7 @@ public class WebController {
         return "up and running";
     }
     
-    
+    //User Login
     @ApiOperation(value = "Form submission")
     @PostMapping("/api1/login")
     public String Login(@RequestBody RequestLogin req){
@@ -65,15 +62,16 @@ public class WebController {
 			ResultSet rs=stmt.executeQuery();
 			if(rs.next()==false)
 			{
-				System.out.println("Invalid login attempt");
 				loginattempt="Invalid login attempt";
+				System.out.println(loginattempt);
 			}
 			else {
 				rs.previous();
 				while(rs.next())
 				{
-					System.out.println("Name: "+rs.getString(1)+", Password: "+rs.getString(2));
 					loginattempt="Valid login attempt";
+					System.out.println(loginattempt);
+					System.out.println("Name: "+rs.getString(1)+", Password: "+rs.getString(2));
 				}
 			}
 			DBMS.closeConnection(stmt, con);
@@ -82,4 +80,72 @@ public class WebController {
 		}
 		return loginattempt;
 	}
+    
+    
+    //Admin Login
+    @ApiOperation(value = "Form submission")
+    @PostMapping("/api1/adminlogin")
+    public ArrayList<String> AdminLogin(@RequestBody RequestAdminLogin req){
+        final String aname;
+        final String apassword;
+        aname = req.getAName();
+        apassword = req.getAPassword();
+        
+        String aloginattempt="initial";
+        
+        //Users List
+        List<String> ulist = new ArrayList<String>();
+        
+        DatabaseConnection DBMS=new DatabaseConnection("jdbc:mysql://localhost:3306/capstone", "root", "root");
+		Connection con, con2;
+		try {
+			con = DBMS.getConnection();
+			String sql="select * from adminlogin where aname=? and apassword=?;";
+			PreparedStatement stmt=con.prepareStatement(sql);
+			stmt.setString(1,aname);
+			stmt.setString(2,apassword);
+			ResultSet rs=stmt.executeQuery();
+			if(rs.next()==false)
+			{
+				aloginattempt="Invalid login attempt";
+				ulist.add(aloginattempt);
+				System.out.println(aloginattempt);
+			}
+			else {
+				rs.previous();
+				String userinfo="";
+				while(rs.next())
+				{
+					aloginattempt="Valid login attempt";
+					System.out.println(aloginattempt);
+					System.out.println("Name: "+rs.getString(1)+", Password: "+rs.getString(2));
+				}
+				con2 = DBMS.getConnection();
+				String sql2="select * from login;";
+				PreparedStatement stmt2=con2.prepareStatement(sql2);
+				ResultSet rs2=stmt2.executeQuery();
+				if(rs2.next()==false)
+				{
+					userinfo="No users found";
+					ulist.add(userinfo);
+					System.out.println(userinfo);
+				}
+				else {
+					rs2.previous();
+					while(rs2.next())
+					{
+						userinfo="Name of User: "+rs2.getString(1)+", Password: "+rs2.getString(2);
+						ulist.add(userinfo);
+						System.out.println(userinfo);
+					}
+				}
+				DBMS.closeConnection(stmt2, con2);
+			}
+			DBMS.closeConnection(stmt, con);
+		} catch (SQLException s) {
+			System.out.println(s.getMessage());
+		}
+		return (ArrayList<String>) ulist;
+		}
+    
 }
