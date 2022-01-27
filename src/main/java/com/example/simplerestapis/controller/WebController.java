@@ -13,10 +13,12 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.example.simplerestapis.models.RequestAdminLogin;
+import com.example.simplerestapis.models.RequestChangeName;
 import com.example.simplerestapis.models.RequestLogin;
 import com.example.simplerestapis.service.DatabaseConnection;
 
@@ -147,5 +149,53 @@ public class WebController {
 		}
 		return (ArrayList<String>) ulist;
 		}
+    
+    
+    
+    //Change account details (name)
+    @ApiOperation(value = "Form submission")
+    @PutMapping("/api1/changename")
+    public String ChangeN(@RequestBody RequestChangeName req){
+        final String cname;
+        final String nname;
+        final String cpassword;
+        cname = req.getCName();
+        nname = req.getNName();
+        cpassword = req.getCPassword();
+        
+        String namechangeattempt="initial";
+        
+        if(nname.contentEquals(cname))
+        {
+        	namechangeattempt="New name is the same as current name. No change made.";
+        }
+        else {
+        DatabaseConnection DBMS=new DatabaseConnection("jdbc:mysql://localhost:3306/capstone", "root", "root");
+		Connection con;
+		try {
+			con = DBMS.getConnection();
+			String sql="update login set name=? where name=? and password=?";
+			PreparedStatement stmt=con.prepareStatement(sql);
+			stmt.setString(1,nname);
+			stmt.setString(2,cname);
+			stmt.setString(3,cpassword);
+			int rowchange=stmt.executeUpdate();
+			if(rowchange==0)
+			{
+				namechangeattempt="No such user exists";
+				System.out.println(namechangeattempt);
+			}
+			else {
+					namechangeattempt="Name of user "+cname+" has been changed to "+nname;
+					System.out.println(namechangeattempt);
+			}
+			DBMS.closeConnection(stmt, con);
+		} catch (SQLException s) {
+			namechangeattempt="This name has been taken, please choose some other name";
+			System.out.println(namechangeattempt);
+			//System.out.println(s.getMessage());
+		}}
+		return namechangeattempt;
+	}
     
 }

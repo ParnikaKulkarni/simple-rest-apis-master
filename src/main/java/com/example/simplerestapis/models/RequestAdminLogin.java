@@ -3,10 +3,10 @@ package com.example.simplerestapis.models;
 import io.swagger.annotations.ApiModelProperty;
 
 public class RequestAdminLogin {
-	@ApiModelProperty(notes = "username of admin for whom login has to be validated", name = "name", required = true)
+	@ApiModelProperty(notes = "username of admin for whom login has to be validated", name = "aname", required = true)
     private String aname;
     
-    @ApiModelProperty(notes = "password of admin for whom login has to be validated", name = "password", required = true)
+    @ApiModelProperty(notes = "password of admin for whom login has to be validated", name = "apassword", required = true)
     private String apassword;
 
     public String getAName(){
