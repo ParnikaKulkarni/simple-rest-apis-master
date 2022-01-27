@@ -19,6 +19,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.example.simplerestapis.models.RequestAdminLogin;
 import com.example.simplerestapis.models.RequestChangeName;
+import com.example.simplerestapis.models.RequestChangePassword;
 import com.example.simplerestapis.models.RequestLogin;
 import com.example.simplerestapis.service.DatabaseConnection;
 
@@ -196,6 +197,57 @@ public class WebController {
 			//System.out.println(s.getMessage());
 		}}
 		return namechangeattempt;
+	}
+    
+    
+    
+    
+  //Change account details (password)
+    @ApiOperation(value = "Form submission")
+    @PutMapping("/api1/changepassword")
+    public String ChangeN(@RequestBody RequestChangePassword req){
+        final String cname;
+        final String npassword;
+        final String cpassword;
+        cname = req.getCName();
+        npassword = req.getNPassword();
+        cpassword = req.getCPassword();
+        
+        String passwordchangeattempt="initial";
+        
+        if(npassword.contentEquals(cpassword))
+        {
+        	passwordchangeattempt="New password is the same as current password. No change made.";
+        }
+        else if(npassword.contains(cname))
+        {
+        	passwordchangeattempt="New password cannot contain the username. Please enter some other password for change.";
+        }
+        else {
+        DatabaseConnection DBMS=new DatabaseConnection("jdbc:mysql://localhost:3306/capstone", "root", "root");
+		Connection con;
+		try {
+			con = DBMS.getConnection();
+			String sql="update login set password=? where name=? and password=?";
+			PreparedStatement stmt=con.prepareStatement(sql);
+			stmt.setString(1,npassword);
+			stmt.setString(2,cname);
+			stmt.setString(3,cpassword);
+			int rowchange=stmt.executeUpdate();
+			if(rowchange==0)
+			{
+				passwordchangeattempt="No such user exists";
+				System.out.println(passwordchangeattempt);
+			}
+			else {
+					passwordchangeattempt="Password of user "+cname+" has been changed from "+cpassword+" to "+npassword;
+					System.out.println(passwordchangeattempt);
+			}
+			DBMS.closeConnection(stmt, con);
+		} catch (SQLException s) {
+			System.out.println(s.getMessage());
+		}}
+		return passwordchangeattempt;
 	}
     
 }
