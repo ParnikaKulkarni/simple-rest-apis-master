@@ -4,18 +4,18 @@ import io.swagger.annotations.ApiModelProperty;
 
 
 public class RequestLogin {
-	@ApiModelProperty(notes = "username of user for whom login has to be validated", name = "name", required = true)
-    private String name;
+	@ApiModelProperty(notes = "username of user for whom login has to be validated", name = "email", required = true)
+    private String email;
     
     @ApiModelProperty(notes = "password of user for whom login has to be validated", name = "password", required = true)
     private String password;
 
-    public String getName(){
-        return this.name;
+    public String getEmail(){
+        return this.email;
     }
 
-    public void setName(String name){
-        this.name = name;
+    public void setEmail(String email){
+        this.email = email;
     }
     
     public String getPassword(){

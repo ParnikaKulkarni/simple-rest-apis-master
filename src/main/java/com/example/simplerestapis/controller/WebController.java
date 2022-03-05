@@ -9,7 +9,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.jdbc.core.JdbcTemplate;
-
+import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -21,6 +21,7 @@ import com.example.simplerestapis.models.RequestAdminLogin;
 import com.example.simplerestapis.models.RequestChangeName;
 import com.example.simplerestapis.models.RequestChangePassword;
 import com.example.simplerestapis.models.RequestLogin;
+import com.example.simplerestapis.models.RequestRegistration;
 import com.example.simplerestapis.service.DatabaseConnection;
 
 import java.util.*;
@@ -45,11 +46,12 @@ public class WebController {
     
     //User Login
     @ApiOperation(value = "Form submission")
+    @CrossOrigin(origins = "http://localhost:3000")
     @PostMapping("/api1/login")
     public String Login(@RequestBody RequestLogin req){
-        final String name;
+        final String email;
         final String password;
-        name = req.getName();
+        email = req.getEmail();
         password = req.getPassword();
         
         String loginattempt="initial";
@@ -58,9 +60,9 @@ public class WebController {
 		Connection con;
 		try {
 			con = DBMS.getConnection();
-			String sql="select * from login where name=? and password=?;";
+			String sql="select * from registration where email=? and password=?;";
 			PreparedStatement stmt=con.prepareStatement(sql);
-			stmt.setString(1,name);
+			stmt.setString(1,email);
 			stmt.setString(2,password);
 			ResultSet rs=stmt.executeQuery();
 			if(rs.next()==false)
@@ -74,7 +76,7 @@ public class WebController {
 				{
 					loginattempt="Valid login attempt";
 					System.out.println(loginattempt);
-					System.out.println("Name: "+rs.getString(1)+", Password: "+rs.getString(2));
+					System.out.println("Email: "+rs.getString(2)+", Password: "+rs.getString(3));
 				}
 			}
 			DBMS.closeConnection(stmt, con);
@@ -85,8 +87,83 @@ public class WebController {
 	}
     
     
+    
+  //User Registration
+    @ApiOperation(value = "Form submission")
+    @CrossOrigin(origins = "http://localhost:3000")
+    @PutMapping("/api1/registration")
+    public String Registration(@RequestBody RequestRegistration req){
+        final String name;
+        final String email;
+        final String password;
+        final String cpassword;
+        final String confirmpassword;
+        name = req.getName();
+        email = req.getEmail();
+        //final String t = req.getConfirmPassword();
+        cpassword = req.getCPassword();
+        password = req.getPassword();
+        //confirmpassword = req.getConfirmPassword();
+        
+        System.out.println(cpassword+" "+password);
+        String register="initial";
+        
+        
+        try {
+        if(password.contentEquals(cpassword)==false)
+        {
+        	register="Password and confirm password do not match";
+        }
+        else {
+        DatabaseConnection DBMS=new DatabaseConnection("jdbc:mysql://localhost:3306/capstone", "root", "root");
+		Connection con, con2;
+		try {
+			con = DBMS.getConnection();
+			String sql="select * from registration where email=?";
+			PreparedStatement stmt=con.prepareStatement(sql);
+			stmt.setString(1,email);
+			ResultSet rs=stmt.executeQuery();
+			if(rs.next()==false)
+			{
+				register="Valid registration attempt";
+				con2 = DBMS.getConnection();
+				String sql2="insert into registration(name, email, password, confirmpassword) values (?, ?, ?, ?)";
+				PreparedStatement stmt2=con2.prepareStatement(sql2);
+				stmt2.setString(1,name);
+				stmt2.setString(2,email);
+				stmt2.setString(3,password);
+				stmt2.setString(4,cpassword);
+				int rowchange=stmt2.executeUpdate();
+				if(rowchange==0) {
+					register="Registration unsuccessful";
+				}
+				else {
+					register=register+"\n"+"New user registered successfully";
+				}
+				System.out.println(register);
+			}
+			else {
+				rs.previous();
+				while(rs.next())
+				{
+					register="Invalid registration attempt. User with the same email already exists.";
+					System.out.println(register);
+				}
+			}
+			DBMS.closeConnection(stmt, con);
+		} catch (SQLException s) {
+			System.out.println(s.getMessage());
+		}}}catch(NullPointerException n)
+        {
+			System.out.println(n.getMessage());
+        }
+		return register;
+	}
+    
+    
     //Admin Login
     @ApiOperation(value = "Form submission")
+    //@CrossOrigin(origins = "http://localhost:3000")
     @PostMapping("/api1/adminlogin")
     public ArrayList<String> AdminLogin(@RequestBody RequestAdminLogin req){
         final String aname;
@@ -149,6 +226,7 @@ public class WebController {
 			System.out.println(s.getMessage());
 		}
 		return (ArrayList<String>) ulist;
+		//return Response.ok((ArrayList<String>) ulist).header("Access-Control-Allow-Origin", "*").build();
 		}
     
     
