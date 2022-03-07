@@ -10,6 +10,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -20,6 +21,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.example.simplerestapis.models.RequestAdminLogin;
 import com.example.simplerestapis.models.RequestChangeName;
 import com.example.simplerestapis.models.RequestChangePassword;
+import com.example.simplerestapis.models.RequestDeleteAccount;
 import com.example.simplerestapis.models.RequestLogin;
 import com.example.simplerestapis.models.RequestRegistration;
 import com.example.simplerestapis.service.DatabaseConnection;
@@ -228,6 +230,67 @@ public class WebController {
 		return (ArrayList<String>) ulist;
 		//return Response.ok((ArrayList<String>) ulist).header("Access-Control-Allow-Origin", "*").build();
 		}
+    
+    
+    
+  //Delete account
+    @ApiOperation(value = "Form submission")
+    @DeleteMapping("/api1/deleteaccount")
+    public String DeleteAccount(@RequestBody RequestDeleteAccount req){
+        final String name;
+        final String email;
+        final String password;
+        name = req.getName();
+        email = req.getEmail();
+        password = req.getPassword();
+        
+        
+        String deleteattempt="initial";
+        
+        DatabaseConnection DBMS=new DatabaseConnection("jdbc:mysql://localhost:3306/capstone", "root", "root");
+		Connection con, con2;
+		try {
+			con = DBMS.getConnection();
+			String sql="select * from registration where name=? and email=? and password=?;";
+			PreparedStatement stmt=con.prepareStatement(sql);
+			stmt.setString(1,name);
+			stmt.setString(2,email);
+			stmt.setString(3,password);
+			ResultSet rs=stmt.executeQuery();
+			if(rs.next()==false)
+			{
+				deleteattempt="No such account exists. Account deletion unsuccessful.";
+				System.out.println(deleteattempt);
+			}
+			else {
+				rs.previous();
+				while(rs.next())
+				{
+					deleteattempt="This account exists in the system.";
+					con2 = DBMS.getConnection();
+					String sql2="delete from registration where name=? and email=? and password=?;";
+					PreparedStatement stmt2=con2.prepareStatement(sql2);
+					stmt2.setString(1,name);
+					stmt2.setString(2,email);
+					stmt2.setString(3,password);
+					int rowchange=stmt2.executeUpdate();
+					if(rowchange==0) {
+						deleteattempt="Account deletion unsuccessful.";
+					}
+					else {
+						deleteattempt=deleteattempt+"\n"+"Account deletion successful.";
+					}
+					System.out.println(deleteattempt);
+				}
+			}
+			DBMS.closeConnection(stmt, con);
+		} catch (SQLException s) {
+			System.out.println(s.getMessage());
+		}
+		return deleteattempt;
+	}
+    
+    
     
     
     

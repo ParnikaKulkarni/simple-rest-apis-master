@@ -1,7 +1,5 @@
 package com.example.simplerestapis.models;
 
-import java.util.Scanner;
-
 import io.swagger.annotations.ApiModelProperty;
 
 public class RequestRegistration {
