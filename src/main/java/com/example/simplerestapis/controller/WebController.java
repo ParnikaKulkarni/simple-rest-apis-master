@@ -21,6 +21,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.example.simplerestapis.models.RequestAdminLogin;
 import com.example.simplerestapis.models.RequestChangeName;
 import com.example.simplerestapis.models.RequestChangePassword;
+import com.example.simplerestapis.models.RequestDeactivateAccount;
 import com.example.simplerestapis.models.RequestDeleteAccount;
 import com.example.simplerestapis.models.RequestLogin;
 import com.example.simplerestapis.models.RequestRegistration;
@@ -99,7 +100,7 @@ public class WebController {
         final String email;
         final String password;
         final String cpassword;
-        final String confirmpassword;
+        //final String confirmpassword;
         name = req.getName();
         email = req.getEmail();
         //final String t = req.getConfirmPassword();
@@ -115,6 +116,7 @@ public class WebController {
         if(password.contentEquals(cpassword)==false)
         {
         	register="Password and confirm password do not match";
+        	System.out.println(register);
         }
         else {
         DatabaseConnection DBMS=new DatabaseConnection("jdbc:mysql://localhost:3306/capstone", "root", "root");
@@ -129,12 +131,12 @@ public class WebController {
 			{
 				register="Valid registration attempt";
 				con2 = DBMS.getConnection();
-				String sql2="insert into registration(name, email, password, confirmpassword) values (?, ?, ?, ?)";
+				String sql2="insert into registration(name, email, password) values (?, ?, ?)";
 				PreparedStatement stmt2=con2.prepareStatement(sql2);
 				stmt2.setString(1,name);
 				stmt2.setString(2,email);
 				stmt2.setString(3,password);
-				stmt2.setString(4,cpassword);
+				//stmt2.setString(4,cpassword);
 				int rowchange=stmt2.executeUpdate();
 				if(rowchange==0) {
 					register="Registration unsuccessful";
@@ -142,6 +144,7 @@ public class WebController {
 				else {
 					register=register+"\n"+"New user registered successfully";
 				}
+				DBMS.closeConnection(stmt2, con2);
 				System.out.println(register);
 			}
 			else {
@@ -280,6 +283,7 @@ public class WebController {
 					else {
 						deleteattempt=deleteattempt+"\n"+"Account deletion successful.";
 					}
+					DBMS.closeConnection(stmt2, con2);
 					System.out.println(deleteattempt);
 				}
 			}
@@ -288,6 +292,81 @@ public class WebController {
 			System.out.println(s.getMessage());
 		}
 		return deleteattempt;
+	}
+    
+    
+    
+  //Deactivate account
+    @ApiOperation(value = "Form submission")
+    @PutMapping("/api1/deactivateaccount")
+    public String DeactivateAccount(@RequestBody RequestDeactivateAccount req){
+        final String name;
+        final String email;
+        final String password;
+        name = req.getName();
+        email = req.getEmail();
+        password = req.getPassword();
+        
+        
+        String deactivateattempt="initial";
+        
+        DatabaseConnection DBMS=new DatabaseConnection("jdbc:mysql://localhost:3306/capstone", "root", "root");
+		Connection con, con2, con3;
+		try {
+			con = DBMS.getConnection();
+			String sql="select * from registration where name=? and email=? and password=?;";
+			PreparedStatement stmt=con.prepareStatement(sql);
+			stmt.setString(1,name);
+			stmt.setString(2,email);
+			stmt.setString(3,password);
+			ResultSet rs=stmt.executeQuery();
+			if(rs.next()==false)
+			{
+				deactivateattempt="No such account exists. Account deactivation unsuccessful.";
+				System.out.println(deactivateattempt);
+			}
+			else {
+				rs.previous();
+				while(rs.next())
+				{
+					deactivateattempt="This account exists in the system.";
+					
+					
+					con2 = DBMS.getConnection();
+					String sql2="insert into deactivated_accounts(name, email, password) values (?, ?, ?)";
+					PreparedStatement stmt2=con2.prepareStatement(sql2);
+					stmt2.setString(1,name);
+					stmt2.setString(2,email);
+					stmt2.setString(3,password);
+					int rowchange=stmt2.executeUpdate();
+					if(rowchange==0) {
+						deactivateattempt=deactivateattempt+"\n"+"Account deactivation unsuccessful";
+					}
+					else {
+						con3 = DBMS.getConnection();
+						String sql3="delete from registration where name=? and email=? and password=?;";
+						PreparedStatement stmt3=con3.prepareStatement(sql3);
+						stmt3.setString(1,name);
+						stmt3.setString(2,email);
+						stmt3.setString(3,password);
+						int rowchange2=stmt3.executeUpdate();
+						if(rowchange2==0) {
+							deactivateattempt="Account deactivation unsuccessful.";
+						}
+						else {
+							deactivateattempt=deactivateattempt+"\n"+"Account deactivation successful.";
+						}
+						DBMS.closeConnection(stmt2, con2);
+						DBMS.closeConnection(stmt3, con3);
+					}
+					System.out.println(deactivateattempt);
+				}
+			}
+			DBMS.closeConnection(stmt, con);
+		} catch (SQLException s) {
+			System.out.println(s.getMessage());
+		}
+		return deactivateattempt;
 	}
     
     
