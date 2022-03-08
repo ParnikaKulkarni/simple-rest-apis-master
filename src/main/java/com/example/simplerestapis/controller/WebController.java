@@ -24,6 +24,7 @@ import com.example.simplerestapis.models.RequestChangePassword;
 import com.example.simplerestapis.models.RequestDeactivateAccount;
 import com.example.simplerestapis.models.RequestDeleteAccount;
 import com.example.simplerestapis.models.RequestLogin;
+import com.example.simplerestapis.models.RequestReactivateAccount;
 import com.example.simplerestapis.models.RequestRegistration;
 import com.example.simplerestapis.service.DatabaseConnection;
 
@@ -367,6 +368,82 @@ public class WebController {
 			System.out.println(s.getMessage());
 		}
 		return deactivateattempt;
+	}
+    
+    
+    
+    
+  //Reactivate account
+    @ApiOperation(value = "Form submission")
+    @PutMapping("/api1/reactivateaccount")
+    public String ReactivateAccount(@RequestBody RequestReactivateAccount req){
+        final String name;
+        final String email;
+        final String password;
+        name = req.getName();
+        email = req.getEmail();
+        password = req.getPassword();
+        
+        
+        String reactivateattempt="initial";
+        
+        DatabaseConnection DBMS=new DatabaseConnection("jdbc:mysql://localhost:3306/capstone", "root", "root");
+		Connection con, con2, con3;
+		try {
+			con = DBMS.getConnection();
+			String sql="select * from deactivated_accounts where name=? and email=? and password=?;";
+			PreparedStatement stmt=con.prepareStatement(sql);
+			stmt.setString(1,name);
+			stmt.setString(2,email);
+			stmt.setString(3,password);
+			ResultSet rs=stmt.executeQuery();
+			if(rs.next()==false)
+			{
+				reactivateattempt="No such account existed. Account reactivation unsuccessful.";
+				System.out.println(reactivateattempt);
+			}
+			else {
+				rs.previous();
+				while(rs.next())
+				{
+					reactivateattempt="This account had been deactivated earlier.";
+					
+					
+					con2 = DBMS.getConnection();
+					String sql2="insert into registration(name, email, password) values (?, ?, ?)";
+					PreparedStatement stmt2=con2.prepareStatement(sql2);
+					stmt2.setString(1,name);
+					stmt2.setString(2,email);
+					stmt2.setString(3,password);
+					int rowchange=stmt2.executeUpdate();
+					if(rowchange==0) {
+						reactivateattempt=reactivateattempt+"\n"+"Account reactivation unsuccessful";
+					}
+					else {
+						con3 = DBMS.getConnection();
+						String sql3="delete from deactivated_accounts where name=? and email=? and password=?;";
+						PreparedStatement stmt3=con3.prepareStatement(sql3);
+						stmt3.setString(1,name);
+						stmt3.setString(2,email);
+						stmt3.setString(3,password);
+						int rowchange2=stmt3.executeUpdate();
+						if(rowchange2==0) {
+							reactivateattempt="Account reactivation unsuccessful.";
+						}
+						else {
+							reactivateattempt=reactivateattempt+"\n"+"Account reactivation successful.";
+						}
+						DBMS.closeConnection(stmt2, con2);
+						DBMS.closeConnection(stmt3, con3);
+					}
+					System.out.println(reactivateattempt);
+				}
+			}
+			DBMS.closeConnection(stmt, con);
+		} catch (SQLException s) {
+			System.out.println(s.getMessage());
+		}
+		return reactivateattempt;
 	}
     
     
