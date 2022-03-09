@@ -27,6 +27,7 @@ import com.example.simplerestapis.models.RequestDeleteAccount;
 import com.example.simplerestapis.models.RequestLogin;
 import com.example.simplerestapis.models.RequestReactivateAccount;
 import com.example.simplerestapis.models.RequestRegistration;
+import com.example.simplerestapis.models.RequestViewDetails;
 import com.example.simplerestapis.service.DatabaseConnection;
 
 import java.util.*;
@@ -235,6 +236,71 @@ public class WebController {
 		return (ArrayList<String>) ulist;
 		//return Response.ok((ArrayList<String>) ulist).header("Access-Control-Allow-Origin", "*").build();
 		}
+    
+    
+    
+    
+  //View user details
+    @ApiOperation(value = "Form submission")
+    //@CrossOrigin(origins = "http://localhost:3000")
+    @PostMapping("/api1/viewdetails")
+    public ArrayList<String> ViewDetails(@RequestBody RequestViewDetails req){
+        final String email;
+        final String password;
+        email = req.getEmail();
+        password = req.getPassword();
+        
+        String viewattempt="initial";
+        
+        //Details List
+        List<String> dlist = new ArrayList<String>();
+        
+        DatabaseConnection DBMS=new DatabaseConnection("jdbc:mysql://localhost:3306/capstone", "root", "root");
+		Connection con;
+		try {
+			con = DBMS.getConnection();
+			String sql="select * from registration where email=? and password=?;";
+			PreparedStatement stmt=con.prepareStatement(sql);
+			stmt.setString(1,email);
+			stmt.setString(2,password);
+			ResultSet rs=stmt.executeQuery();
+			if(rs.next()==false)
+			{
+				viewattempt="No such user exists.";
+				dlist.add(viewattempt);
+				System.out.println(viewattempt);
+			}
+			else {
+				rs.previous();
+				String userinfo="";
+				while(rs.next())
+				{
+					viewattempt="This user exists in the system.";
+					dlist.add(viewattempt);
+					userinfo=rs.getString(1);
+					dlist.add(userinfo);
+					System.out.println(viewattempt);
+					//System.out.println(userinfo);
+					userinfo=rs.getString(2);
+					dlist.add(userinfo);
+					//System.out.println(userinfo);
+					//System.out.println("Name: "+rs.getString(1)+", Email: "+rs.getString(2));
+				}
+				
+			}
+			DBMS.closeConnection(stmt, con);
+		} catch (SQLException s) {
+			System.out.println(s.getMessage());
+		}
+		System.out.println("Printing user details list");
+	    for(String detail:dlist)
+	    {
+	    	System.out.print(detail+"\n");
+	    }
+		return (ArrayList<String>) dlist;
+		}
+    
+    
     
     
     
