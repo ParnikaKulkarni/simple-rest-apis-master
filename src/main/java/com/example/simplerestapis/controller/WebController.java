@@ -19,6 +19,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.example.simplerestapis.models.RequestAdminLogin;
+import com.example.simplerestapis.models.RequestChangeEmail;
 import com.example.simplerestapis.models.RequestChangeName;
 import com.example.simplerestapis.models.RequestChangePassword;
 import com.example.simplerestapis.models.RequestDeactivateAccount;
@@ -456,10 +457,12 @@ public class WebController {
     public String ChangeN(@RequestBody RequestChangeName req){
         final String cname;
         final String nname;
-        final String cpassword;
+        final String password;
+        final String email;
         cname = req.getCName();
         nname = req.getNName();
-        cpassword = req.getCPassword();
+        password = req.getPassword();
+        email = req.getEmail();
         
         String namechangeattempt="initial";
         
@@ -472,11 +475,12 @@ public class WebController {
 		Connection con;
 		try {
 			con = DBMS.getConnection();
-			String sql="update login set name=? where name=? and password=?";
+			String sql="update registration set name=? where email=? and password=? and name=?";
 			PreparedStatement stmt=con.prepareStatement(sql);
 			stmt.setString(1,nname);
-			stmt.setString(2,cname);
-			stmt.setString(3,cpassword);
+			stmt.setString(2,email);
+			stmt.setString(3,password);
+			stmt.setString(4,cname);
 			int rowchange=stmt.executeUpdate();
 			if(rowchange==0)
 			{
@@ -489,9 +493,7 @@ public class WebController {
 			}
 			DBMS.closeConnection(stmt, con);
 		} catch (SQLException s) {
-			namechangeattempt="This name has been taken, please choose some other name";
-			System.out.println(namechangeattempt);
-			//System.out.println(s.getMessage());
+			System.out.println(s.getMessage());
 		}}
 		return namechangeattempt;
 	}
@@ -502,11 +504,11 @@ public class WebController {
   //Change account details (password)
     @ApiOperation(value = "Form submission")
     @PutMapping("/api1/changepassword")
-    public String ChangeN(@RequestBody RequestChangePassword req){
-        final String cname;
+    public String ChangeP(@RequestBody RequestChangePassword req){
+        final String email;
         final String npassword;
         final String cpassword;
-        cname = req.getCName();
+        email = req.getEmail();
         npassword = req.getNPassword();
         cpassword = req.getCPassword();
         
@@ -516,19 +518,19 @@ public class WebController {
         {
         	passwordchangeattempt="New password is the same as current password. No change made.";
         }
-        else if(npassword.contains(cname))
+        else if(npassword.toLowerCase().contains(email.substring(0,email.indexOf('@')-1).toLowerCase()) || email.toLowerCase().contains(npassword.toLowerCase()))
         {
-        	passwordchangeattempt="New password cannot contain the username. Please enter some other password for change.";
+        	passwordchangeattempt="New password cannot be similar to email. Please enter some other password for change.";
         }
         else {
         DatabaseConnection DBMS=new DatabaseConnection("jdbc:mysql://localhost:3306/capstone", "root", "root");
 		Connection con;
 		try {
 			con = DBMS.getConnection();
-			String sql="update login set password=? where name=? and password=?";
+			String sql="update registration set password=? where email=? and password=?";
 			PreparedStatement stmt=con.prepareStatement(sql);
 			stmt.setString(1,npassword);
-			stmt.setString(2,cname);
+			stmt.setString(2,email);
 			stmt.setString(3,cpassword);
 			int rowchange=stmt.executeUpdate();
 			if(rowchange==0)
@@ -537,7 +539,7 @@ public class WebController {
 				System.out.println(passwordchangeattempt);
 			}
 			else {
-					passwordchangeattempt="Password of user "+cname+" has been changed from "+cpassword+" to "+npassword;
+					passwordchangeattempt="Password of user "+email+" has been changed from "+cpassword+" to "+npassword;
 					System.out.println(passwordchangeattempt);
 			}
 			DBMS.closeConnection(stmt, con);
@@ -545,6 +547,53 @@ public class WebController {
 			System.out.println(s.getMessage());
 		}}
 		return passwordchangeattempt;
+	}
+    
+    
+  //Change account details (email)
+    @ApiOperation(value = "Form submission")
+    @PutMapping("/api1/changeemail")
+    public String ChangeE(@RequestBody RequestChangeEmail req){
+        final String cemail;
+        final String nemail;
+        final String password;
+        cemail = req.getCEmail();
+        nemail = req.getNEmail();
+        password = req.getPassword();
+        
+        String emailchangeattempt="initial";
+        
+        if(nemail.contentEquals(cemail))
+        {
+        	emailchangeattempt="New email is the same as current email. No change made.";
+        }
+        else {
+            DatabaseConnection DBMS=new DatabaseConnection("jdbc:mysql://localhost:3306/capstone", "root", "root");
+    		Connection con;
+    		try {
+    			con = DBMS.getConnection();
+    			String sql="update registration set email=? where email=? and password=?";
+    			PreparedStatement stmt=con.prepareStatement(sql);
+    			stmt.setString(1,nemail);
+    			stmt.setString(2,cemail);
+    			stmt.setString(3,password);
+    			int rowchange=stmt.executeUpdate();
+    			if(rowchange==0)
+    			{
+    				emailchangeattempt="No such user exists";
+    				System.out.println(emailchangeattempt);
+    			}
+    			else {
+    					emailchangeattempt="Email of user "+cemail+" has been changed to "+nemail;
+    					System.out.println(emailchangeattempt);
+    			}
+    			DBMS.closeConnection(stmt, con);
+    		} catch (SQLException s) {
+    			emailchangeattempt="This email has been taken, please choose some other email";
+    			System.out.println(emailchangeattempt);
+    			//System.out.println(s.getMessage());
+    		}}
+    		return emailchangeattempt;
 	}
     
 }

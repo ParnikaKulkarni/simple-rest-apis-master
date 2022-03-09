@@ -4,8 +4,8 @@ import io.swagger.annotations.ApiModelProperty;
 
 public class RequestChangePassword {
 	
-	@ApiModelProperty(notes = "current name of user for whom password has to be updated in database", name = "cname", required = true)
-    private String cname;
+	@ApiModelProperty(notes = "email of user for whom password has to be updated in database", name = "email", required = true)
+    private String email;
     
 	@ApiModelProperty(notes = "current password which has to be updated in database", name = "cpassword", required = true)
     private String cpassword;
@@ -13,12 +13,12 @@ public class RequestChangePassword {
     @ApiModelProperty(notes = "current password of user has to be changed to this new password", name = "npassword", required = true)
     private String npassword;
 
-    public String getCName(){
-        return this.cname;
+    public String getEmail(){
+        return this.email;
     }
 
-    public void setCName(String cname){
-        this.cname = cname;
+    public void setEmail(String email){
+        this.email = email;
     }
     
     public String getCPassword(){
