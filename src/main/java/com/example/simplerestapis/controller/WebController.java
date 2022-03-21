@@ -1,6 +1,8 @@
 package com.example.simplerestapis.controller;
 
 import java.sql.*;
+import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
 
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
@@ -25,6 +27,7 @@ import com.example.simplerestapis.models.RequestChangePassword;
 import com.example.simplerestapis.models.RequestDeactivateAccount;
 import com.example.simplerestapis.models.RequestDeleteAccount;
 import com.example.simplerestapis.models.RequestLogin;
+import com.example.simplerestapis.models.RequestNetSavings;
 import com.example.simplerestapis.models.RequestReactivateAccount;
 import com.example.simplerestapis.models.RequestRegistration;
 import com.example.simplerestapis.models.RequestViewDetails;
@@ -685,65 +688,74 @@ public class WebController {
     
     
     
-//  //View net user savings
-//    @ApiOperation(value = "Form submission")
-//    //@CrossOrigin(origins = "http://localhost:3000")
-//    @PostMapping("/api1/netsavings")
-//    public ArrayList<String> NetSavings(@RequestBody RequestNetSavings req){
-//        final String email;
-//        final String password;
-//        email = req.getEmail();
-//        password = req.getPassword();
-//        
-//        String viewattempt="initial";
-//        
-//        //Details List
-//        List<String> dlist = new ArrayList<String>();
-//        
-//        DatabaseConnection DBMS=new DatabaseConnection("jdbc:mysql://localhost:3306/capstone", "root", "root");
-//		Connection con;
-//		try {
-//			con = DBMS.getConnection();
-//			String sql="select * from registration where email=? and password=?;";
-//			PreparedStatement stmt=con.prepareStatement(sql);
-//			stmt.setString(1,email);
-//			stmt.setString(2,password);
-//			ResultSet rs=stmt.executeQuery();
-//			if(rs.next()==false)
-//			{
-//				viewattempt="No such user exists.";
-//				dlist.add(viewattempt);
-//				System.out.println(viewattempt);
-//			}
-//			else {
-//				rs.previous();
-//				String userinfo="";
-//				while(rs.next())
-//				{
-//					viewattempt="This user exists in the system.";
-//					dlist.add(viewattempt);
-//					userinfo=rs.getString(1);
-//					dlist.add(userinfo);
-//					System.out.println(viewattempt);
-//					//System.out.println(userinfo);
-//					userinfo=rs.getString(2);
-//					dlist.add(userinfo);
-//					//System.out.println(userinfo);
-//					//System.out.println("Name: "+rs.getString(1)+", Email: "+rs.getString(2));
-//				}
-//				
-//			}
-//			DBMS.closeConnection(stmt, con);
-//		} catch (SQLException s) {
-//			System.out.println(s.getMessage());
-//		}
-//		System.out.println("Printing user details list");
-//	    for(String detail:dlist)
-//	    {
-//	    	System.out.print(detail+"\n");
-//	    }
-//		return (ArrayList<String>) dlist;
-//		}
+  //View net user savings
+    @ApiOperation(value = "Form submission")
+    //@CrossOrigin(origins = "http://localhost:3000")
+    @PostMapping("/api1/netsavings")
+    public String NetSavings(@RequestBody RequestNetSavings req){
+        final String email;
+        final String password;
+        final long salary;
+        final long expenditure;
+        email = req.getEmail();
+        password = req.getPassword();
+        salary=req.getSalary();
+        expenditure=req.getExpenditure();
+        
+        String savingsattempt="initial";
+        long savings;
+        
+        //Calculating and viewing the net user savings since account opening
+        
+        
+        DatabaseConnection DBMS=new DatabaseConnection("jdbc:mysql://localhost:3306/capstone", "root", "root");
+		Connection con;
+		try {
+			con = DBMS.getConnection();
+			String sql="select cbalance, month, year from registration where email=? and password=?;";
+			PreparedStatement stmt=con.prepareStatement(sql);
+			stmt.setString(1,email);
+			stmt.setString(2,password);
+			ResultSet rs=stmt.executeQuery();
+			if(rs.next()==false)
+			{
+				savingsattempt="No such user exists.";
+				System.out.println(savingsattempt);
+			}
+			else {
+				rs.previous();
+				String userinfo="";
+				while(rs.next())
+				{
+					savingsattempt="This user exists in the system.";
+					long ibalance=Long.parseLong(rs.getString(1));
+					int month=rs.getInt(2);
+					int year=rs.getInt(3);
+					String date1=year+"-0"+month+"-01";
+					String date2=java.time.LocalDate.now().toString();
+					long monthsBetween = ChronoUnit.MONTHS.between(
+					        LocalDate.parse(date1),
+					        LocalDate.parse(date2).withDayOfMonth(1));
+					if(salary<=expenditure)
+					{
+						savingsattempt=savingsattempt+"\n"+"Your monthly expenditure is greater than or equal to your monthly salary. Please make use of our application to improve your savings.";
+						System.out.println(savingsattempt);
+					}
+					else {
+						System.out.println(monthsBetween);
+						savings=(salary-expenditure)*monthsBetween;
+						savingsattempt=savingsattempt+"\n"+"Your net savings are calculated to be Rs. "+savings+" from the time you registered in our application. This amount is apart from the balance of Rs. "+ibalance+" in your account at the time of registration. The net total balance in your account is Rs. "+(ibalance+savings);
+						System.out.println(savingsattempt);
+					}
+				}
+				
+			}
+			DBMS.closeConnection(stmt, con);
+		} catch (SQLException s) {
+			System.out.println(s.getMessage());
+		}
+		return savingsattempt;
+		}
     
     
     
