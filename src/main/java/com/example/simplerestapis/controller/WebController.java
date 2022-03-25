@@ -26,6 +26,7 @@ import com.example.simplerestapis.models.RequestChangeName;
 import com.example.simplerestapis.models.RequestChangePassword;
 import com.example.simplerestapis.models.RequestDeactivateAccount;
 import com.example.simplerestapis.models.RequestDeleteAccount;
+import com.example.simplerestapis.models.RequestExpenditure;
 import com.example.simplerestapis.models.RequestLogin;
 import com.example.simplerestapis.models.RequestNetSavings;
 import com.example.simplerestapis.models.RequestReactivateAccount;
@@ -738,7 +739,7 @@ public class WebController {
 					        LocalDate.parse(date2).withDayOfMonth(1));
 					if(salary<=expenditure)
 					{
-						savingsattempt=savingsattempt+"\n"+"Your monthly expenditure is greater than or equal to your monthly salary. Please make use of our application to improve your savings.";
+						savingsattempt=savingsattempt+"\n"+"Your monthly expenditure is greater than or equal to your monthly salary. Please make use of our application to monitor your expenses and improve your savings.";
 						System.out.println(savingsattempt);
 					}
 					else {
@@ -759,5 +760,119 @@ public class WebController {
     
     
     
+    
+  //View average monthly and annual user expenditures
+    @ApiOperation(value = "Form submission")
+    //@CrossOrigin(origins = "http://localhost:3000")
+    @PostMapping("/api1/expenditures")
+    public ArrayList<String> Expenditure(@RequestBody RequestExpenditure req){
+        final String email;
+        final String password;
+        //final String asalary;
+        final long salary;
+        final long rent;
+        final long transport;
+        final long insurance;
+        final long food;
+        final long ce;
+        final long utility;
+        final long travel;
+        final long personal;
+        final long loan;
+        final long cce;
+        final long other;
+        email = req.getEmail();
+        password = req.getPassword();
+        salary=req.getSalary();
+        rent=req.getRent();
+        transport=req.getTransport();
+        insurance=req.getInsurance();
+        food=req.getFood();
+        ce=req.getCE();
+        utility=req.getUtility();
+        travel=req.getTravel();
+        personal=req.getPersonal();
+        loan=req.getLoan();
+        cce=req.getCCE();
+        other=req.getOther();
+        
+        System.out.println(salary);
+        System.out.println(rent);
+        System.out.println(transport);
+        System.out.println(insurance);
+        System.out.println(food);
+        System.out.println(ce);
+        System.out.println(utility);
+        System.out.println(travel);
+        System.out.println(personal);
+        System.out.println(loan);
+        System.out.println(cce);
+        System.out.println(other);
+
+        ArrayList<String> results=new ArrayList<String>();
+        String avgexpenditureattempt="initial";
+        long monthlye;
+        long annuale;
+        double percentagesaved;
+        double percentagespent;
+        
+        //Calculating and viewing the average user expenditures
+        
+        
+        DatabaseConnection DBMS=new DatabaseConnection("jdbc:mysql://localhost:3306/capstone", "root", "root");
+		Connection con;
+		try {
+			con = DBMS.getConnection();
+			String sql="select * from registration where email=? and password=?;";
+			PreparedStatement stmt=con.prepareStatement(sql);
+			stmt.setString(1,email);
+			stmt.setString(2,password);
+			ResultSet rs=stmt.executeQuery();
+			if(rs.next()==false)
+			{
+				avgexpenditureattempt="No such user exists.";
+				results.add(avgexpenditureattempt);
+				System.out.println(avgexpenditureattempt);
+			}
+			else {
+				rs.previous();
+				while(rs.next())
+				{
+					avgexpenditureattempt="This user exists in the system.";
+					monthlye=rent+transport+insurance+food+ce+utility+travel+personal+loan+cce+other;
+					System.out.println(monthlye);
+					annuale=monthlye*12;
+					System.out.println(annuale);
+					results.add(avgexpenditureattempt);
+					results.add(monthlye+"");
+					results.add(annuale+"");
+					if(annuale>salary)
+					{
+						results.add("You are spending more that you are earning per year. Please make use of our application to monitor your expenses and improve your savings.");
+					}
+					else {
+						percentagespent=((double)annuale/(double)salary)*100;
+						String pspent=String.format("%.2f", percentagespent);
+						percentagesaved=100-percentagespent;
+						String psaved=String.format("%.2f", percentagesaved);
+						if(pspent.contentEquals("100.00"))
+						{
+							results.add("You are spending all your earnings on expenses. Please make use of our application to monitor your expenses and improve your savings.");
+						}
+						else {
+							results.add(pspent+"");
+							results.add(psaved+"");
+						}
+					}
+				}
+				
+			}
+			DBMS.closeConnection(stmt, con);
+		} catch (SQLException s) {
+			System.out.println(s.getMessage());
+			results.add(s.getMessage());
+		}
+		return results;
+		} 
     
 }
