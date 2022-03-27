@@ -299,12 +299,37 @@ public class WebController {
 				{
 					viewattempt="This user exists in the system.";
 					dlist.add(viewattempt);
+					
+					//name
 					userinfo=rs.getString(1);
 					dlist.add(userinfo);
 					System.out.println(viewattempt);
 					//System.out.println(userinfo);
+					
+					//email
 					userinfo=rs.getString(2);
 					dlist.add(userinfo);
+					
+					//account no
+					userinfo=rs.getString(4);
+					dlist.add(userinfo);
+					
+					//ifsc code
+					userinfo=rs.getString(5);
+					dlist.add(userinfo);
+					
+					//account balance at the time of registration
+					userinfo=rs.getString(6);
+					dlist.add(userinfo);
+					
+					//month of registration
+					userinfo=rs.getString(7);
+					dlist.add(userinfo);
+					
+					//year of registration
+					userinfo=rs.getString(8);
+					dlist.add(userinfo);
+					
 					//System.out.println(userinfo);
 					//System.out.println("Name: "+rs.getString(1)+", Email: "+rs.getString(2));
 				}

@@ -80,7 +80,7 @@ public class RequestExpenditure {
 //    @ApiModelProperty(notes = "monthly child care expenditure of user for whom average expenditures have to be displayed", name = "child", required = true)
 //    private String child;
     
-    @ApiModelProperty(notes = "monthly child care expenditure of user for whom average expenditures have to be displayed", name = "ce", required = true)
+    @ApiModelProperty(notes = "monthly child care expenditure of user for whom average expenditures have to be displayed", name = "cce", required = true)
     private long cce;
     
 //    @ApiModelProperty(notes = "monthly other expenditures of user for whom average expenditures have to be displayed", name = "othere", required = true)
