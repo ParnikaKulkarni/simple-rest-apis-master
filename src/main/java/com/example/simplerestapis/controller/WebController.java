@@ -149,7 +149,7 @@ public class WebController {
 			ResultSet rs=stmt.executeQuery();
 			if(rs.next()==false)
 			{
-				register="Valid registration attempt";
+				register="Valid registration attempt.";
 				con2 = DBMS.getConnection();
 				String sql2="insert into registration(name, email, password, accountno, ifsc, cbalance, month, year) values (?, ?, ?, ?, ?, ?, ?, ?)";
 				PreparedStatement stmt2=con2.prepareStatement(sql2);
