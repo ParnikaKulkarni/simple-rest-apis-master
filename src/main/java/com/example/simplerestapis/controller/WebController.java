@@ -3,6 +3,7 @@ package com.example.simplerestapis.controller;
 import java.sql.*;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
+import java.text.DecimalFormat;
 
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
@@ -28,6 +29,7 @@ import com.example.simplerestapis.models.RequestDeactivateAccount;
 import com.example.simplerestapis.models.RequestDeleteAccount;
 import com.example.simplerestapis.models.RequestExpenditure;
 import com.example.simplerestapis.models.RequestLogin;
+import com.example.simplerestapis.models.RequestMutualFunds;
 import com.example.simplerestapis.models.RequestNetSavings;
 import com.example.simplerestapis.models.RequestReactivateAccount;
 import com.example.simplerestapis.models.RequestRegistration;
@@ -418,6 +420,11 @@ public class WebController {
         final String name;
         final String email;
         final String password;
+        String accountno;
+        String ifsc;
+        String cbalance;
+        int month;
+        int year;
         name = req.getName();
         email = req.getEmail();
         password = req.getPassword();
@@ -445,14 +452,23 @@ public class WebController {
 				while(rs.next())
 				{
 					deactivateattempt="This account exists in the system.";
-					
+					accountno=rs.getString(4);
+					ifsc=rs.getString(5);
+					cbalance=rs.getString(6);
+					month=rs.getInt(7);
+					year=rs.getInt(8);
 					
 					con2 = DBMS.getConnection();
-					String sql2="insert into deactivated_accounts(name, email, password) values (?, ?, ?)";
+					String sql2="insert into deactivated_accounts(name, email, password, accountno, ifsc, cbalance, month, year) values (?, ?, ?, ?, ?, ?, ?, ?)";
 					PreparedStatement stmt2=con2.prepareStatement(sql2);
 					stmt2.setString(1,name);
 					stmt2.setString(2,email);
 					stmt2.setString(3,password);
+					stmt2.setString(4,accountno);
+					stmt2.setString(5,ifsc);
+					stmt2.setString(6,cbalance);
+					stmt2.setInt(7,month);
+					stmt2.setInt(8,year);
 					int rowchange=stmt2.executeUpdate();
 					if(rowchange==0) {
 						deactivateattempt=deactivateattempt+"\n"+"Account deactivation unsuccessful";
@@ -494,6 +510,11 @@ public class WebController {
         final String name;
         final String email;
         final String password;
+        String accountno;
+        String ifsc;
+        String cbalance;
+        int month;
+        int year;
         name = req.getName();
         email = req.getEmail();
         password = req.getPassword();
@@ -521,14 +542,23 @@ public class WebController {
 				while(rs.next())
 				{
 					reactivateattempt="This account had been deactivated earlier.";
-					
+					accountno=rs.getString(4);
+					ifsc=rs.getString(5);
+					cbalance=rs.getString(6);
+					month=rs.getInt(7);
+					year=rs.getInt(8);
 					
 					con2 = DBMS.getConnection();
-					String sql2="insert into registration(name, email, password) values (?, ?, ?)";
+					String sql2="insert into registration(name, email, password, accountno, ifsc, cbalance, month, year) values (?, ?, ?, ?, ?, ?, ?, ?)";
 					PreparedStatement stmt2=con2.prepareStatement(sql2);
 					stmt2.setString(1,name);
 					stmt2.setString(2,email);
 					stmt2.setString(3,password);
+					stmt2.setString(4,accountno);
+					stmt2.setString(5,ifsc);
+					stmt2.setString(6,cbalance);
+					stmt2.setInt(7,month);
+					stmt2.setInt(8,year);
 					int rowchange=stmt2.executeUpdate();
 					if(rowchange==0) {
 						reactivateattempt=reactivateattempt+"\n"+"Account reactivation unsuccessful";
@@ -899,5 +929,73 @@ public class WebController {
 		}
 		return results;
 		} 
+    
+    
+    
+    
+    
+    
+  //View gains from mutual funds investment
+    @ApiOperation(value = "Form submission")
+    //@CrossOrigin(origins = "http://localhost:3000")
+    @PostMapping("/api1/mutualfunds")
+    public String MutualFunds(@RequestBody RequestMutualFunds req){
+        final String email;
+        final String password;
+        final long iamount;
+        final long mincome;
+        email = req.getEmail();
+        password = req.getPassword();
+        iamount=req.getIAmount();
+        mincome=req.getMIncome();
+        String minvestmentattempt="initial";
+
+        //Calculating and viewing the net gains from mutual funds investment
+        
+        
+        DatabaseConnection DBMS=new DatabaseConnection("jdbc:mysql://localhost:3306/capstone", "root", "root");
+		Connection con;
+		try {
+			con = DBMS.getConnection();
+			String sql="select * from registration where email=? and password=?;";
+			PreparedStatement stmt=con.prepareStatement(sql);
+			stmt.setString(1,email);
+			stmt.setString(2,password);
+			ResultSet rs=stmt.executeQuery();
+			if(rs.next()==false)
+			{
+				minvestmentattempt="No such user exists.";
+				System.out.println(minvestmentattempt);
+			}
+			else {
+				rs.previous();
+				while(rs.next())
+				{
+					minvestmentattempt="This user exists in the system.";
+					final DecimalFormat decimals = new DecimalFormat("0.00");
+
+					if(iamount>((double)20/(double)100)*mincome)
+					{
+						minvestmentattempt=minvestmentattempt+"\n"+"It is advisable to start with investing 20% of your monthly salary in mutual funds after saving atleast 6x your monthly salary for emergency purposes. If you consider going forward with an investment of Rs. "+iamount+", then you may invest in debt funds if you have a short investment horizon. Otherwise, you may invest in equity or hybrid funds if you have a long investment horizon. Investing in debt funds has moderately high risk and based on average returns, 3.4% to 14.3% gain can be made from an year's worth of investments. In an year, you will be able to gain from Rs. "+decimals.format(iamount*12*(3.4/100))+" to Rs. +"+decimals.format(iamount*12*(14.3/100))+". Investing in equity funds has moderate to high risk and based on average returns, 7.37% to 21.45% gain can be made from an year's worth of investments. In an year, you will be able to gain from Rs. "+decimals.format(iamount*12*(7.37/100))+" to Rs. "+decimals.format(iamount*12*(21.45/100))+". Investing in hybrid funds has low to moderate risk and based on average returns, 17.15% to 33.37% gain can be made from an year's worth of investments in the best hybrid funds. In an year, you will be able to gain from Rs. "+decimals.format(iamount*12*(17.15/100))+" to Rs. "+decimals.format(iamount*12*(33.37/100))+".";
+						System.out.println(minvestmentattempt);
+					}
+					else if(iamount>0){
+						minvestmentattempt=minvestmentattempt+"\n"+"This is an appropriate amount for starting investment in mutual funds. If you consider going forward with an investment of Rs. "+iamount+", then you may invest in debt funds if you have a short investment horizon. Otherwise, you may invest in equity or hybrid funds if you have a long investment horizon. Investing in debt funds has moderately high risk and based on average returns, 3.4% to 14.3% gain can be made from an year's worth of investments. In an year, you will be able to gain from Rs. "+decimals.format(iamount*12*(3.4/100))+" to Rs. "+decimals.format(iamount*12*(14.3/100))+". Investing in equity funds has moderate to high risk and based on average returns, 7.37% to 21.45% gain can be made from an year's worth of investments. In an year, you will be able to gain from Rs. "+decimals.format(iamount*12*(7.37/100))+" to Rs. "+decimals.format(iamount*12*(21.45/100))+". Investing in hybrid funds has low to moderate risk and based on average returns, 17.15% to 33.37% gain can be made from an year's worth of investments in the best hybrid funds. In an year, you will be able to gain from Rs. "+decimals.format(iamount*12*(17.15/100))+" to Rs. "+decimals.format(iamount*12*(33.37/100))+".";
+						System.out.println(minvestmentattempt);
+					}
+					else {
+						minvestmentattempt=minvestmentattempt+"\n"+"This is an invalid amount for investment.";
+						System.out.println(minvestmentattempt);
+					}
+				}
+				
+			}
+			DBMS.closeConnection(stmt, con);
+		} catch (SQLException s) {
+			System.out.println(s.getMessage());
+		}
+		return minvestmentattempt;
+		}
+    
     
 }
