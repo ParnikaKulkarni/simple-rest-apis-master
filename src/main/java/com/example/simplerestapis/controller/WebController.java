@@ -31,6 +31,7 @@ import com.example.simplerestapis.models.RequestExpenditure;
 import com.example.simplerestapis.models.RequestLogin;
 import com.example.simplerestapis.models.RequestMutualFunds;
 import com.example.simplerestapis.models.RequestNetSavings;
+import com.example.simplerestapis.models.RequestProvidentFunds;
 import com.example.simplerestapis.models.RequestReactivateAccount;
 import com.example.simplerestapis.models.RequestRegistration;
 import com.example.simplerestapis.models.RequestViewDetails;
@@ -995,6 +996,79 @@ public class WebController {
 			System.out.println(s.getMessage());
 		}
 		return minvestmentattempt;
+		}
+    
+    
+    
+    
+  //View gains from provident funds investment
+    @ApiOperation(value = "Form submission")
+    //@CrossOrigin(origins = "http://localhost:3000")
+    @PostMapping("/api1/providentfunds")
+    public String ProvidentFunds(@RequestBody RequestProvidentFunds req){
+        final String email;
+        final String password;
+        final long iamount;
+        final long aincome;
+        email = req.getEmail();
+        password = req.getPassword();
+        iamount=req.getIAmount();
+        aincome=req.getAIncome();
+        String pinvestmentattempt="initial";
+
+        //Calculating and viewing the net gains from mutual funds investment
+        
+        
+        DatabaseConnection DBMS=new DatabaseConnection("jdbc:mysql://localhost:3306/capstone", "root", "root");
+		Connection con;
+		try {
+			con = DBMS.getConnection();
+			String sql="select * from registration where email=? and password=?;";
+			PreparedStatement stmt=con.prepareStatement(sql);
+			stmt.setString(1,email);
+			stmt.setString(2,password);
+			ResultSet rs=stmt.executeQuery();
+			if(rs.next()==false)
+			{
+				pinvestmentattempt="No such user exists.";
+				System.out.println(pinvestmentattempt);
+			}
+			else {
+				rs.previous();
+				while(rs.next())
+				{
+					pinvestmentattempt="This user exists in the system.";
+					final DecimalFormat decimals = new DecimalFormat("0.00");
+					
+					if(iamount>150000)
+					{
+						pinvestmentattempt=pinvestmentattempt+"\n"+"Rs. 150000 is the maximum allowed investment amount in a year if you are investing in Public Provident Fund. There is no limit to the amount that can be invested through Voluntary Provident Fund in Employees' Provident Fund apart from 12% of your basic salary. The lock-in period for Public Provident Fund is 15 years, with 7.10% returns per annum. On the other hand, the lock-in period for Employees' Provident Fund is till retirement, with 8.50% returns per annum. In a year, you will be able to gain Rs. "+decimals.format((8.50/100)*iamount)+" through Employees' Provident Fund. You won't be able to invest through Public Provident Fund with this investment amount (greater than Rs. 150000 a year).";
+						System.out.println(pinvestmentattempt);
+					}
+					else if(iamount>=500 && iamount>=(0.12*aincome)){
+						pinvestmentattempt=pinvestmentattempt+"\n"+"Rs. 500 is the minimum allowed investment amount in a year if you are investing in Public Provident Fund. This investment amount is appropriate (greater than or equal to 12% of your basic salary) when investing through Employees' Provident Fund. The lock-in period for Public Provident Fund is 15 years, with 7.10% returns per annum. On the other hand, the lock-in period for Employees' Provident Fund is till retirement, with 8.50% returns per annum. In a year, you will be able to gain Rs. "+decimals.format((7.10/100)*iamount)+" through Public Provident Fund or Rs. "+decimals.format((8.50/100)*iamount)+" through Employees' Provident Fund.";
+						System.out.println(pinvestmentattempt);
+					}
+					else if(iamount>=500){
+						pinvestmentattempt=pinvestmentattempt+"\n"+"Rs. 500 is the minimum allowed investment amount in a year if you are investing in Public Provident Fund. You should invest a minimum of 12% of your basic salary, Rs. "+decimals.format(0.12*aincome)+" when investing through Employees' Provident Fund. The lock-in period for Public Provident Fund is 15 years, with 7.10% returns per annum. On the other hand, the lock-in period for Employees' Provident Fund is till retirement, with 8.50% returns per annum. In a year, you will be able to gain Rs. "+decimals.format((7.10/100)*iamount)+" through Public Provident Fund. You won't be able to invest through Employees' Provident Fund with this investment amount (less than 12% of your basic salary).";
+						System.out.println(pinvestmentattempt);
+					}
+					else if(iamount<500 && iamount>=(0.12*aincome)){
+						pinvestmentattempt=pinvestmentattempt+"\n"+"The investment amount is below the allowed minimum investment amount in Public Provident Fund. You should invest through Employees' Provident Fund, as this investment amount is greater than or equal to 12% of your basic salary. The lock-in period for Employees' Provident Fund is till retirement, with 8.50% returns per annum. In a year, you will be able to gain Rs. "+decimals.format((8.50/100)*iamount)+" through Employees' Provident Fund.";
+						System.out.println(pinvestmentattempt);
+					}
+					else {
+						pinvestmentattempt=pinvestmentattempt+"\n"+"This is an invalid amount for investment.";
+						System.out.println(pinvestmentattempt);
+					}
+				}
+				
+			}
+			DBMS.closeConnection(stmt, con);
+		} catch (SQLException s) {
+			System.out.println(s.getMessage());
+		}
+		return pinvestmentattempt;
 		}
     
     
