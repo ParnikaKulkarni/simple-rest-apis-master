@@ -1,5 +1,6 @@
 package com.example.simplerestapis.controller;
 
+import java.lang.module.Configuration;
 import java.sql.*;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
@@ -34,8 +35,16 @@ import com.example.simplerestapis.models.RequestNetSavings;
 import com.example.simplerestapis.models.RequestProvidentFunds;
 import com.example.simplerestapis.models.RequestReactivateAccount;
 import com.example.simplerestapis.models.RequestRegistration;
+import com.example.simplerestapis.models.RequestStocks;
 import com.example.simplerestapis.models.RequestViewDetails;
 import com.example.simplerestapis.service.DatabaseConnection;
+
+import com.intrinio.api.*;
+import com.intrinio.models.*;
+import com.intrinio.invoker.*;
+import com.intrinio.invoker.auth.*;
+import org.threeten.bp.*;
+import java.math.BigDecimal;
 
 import java.util.*;
 
@@ -596,6 +605,7 @@ public class WebController {
     
     
     //Change account details (name)
+    @CrossOrigin(origins = "http://localhost:3000")
     @ApiOperation(value = "Form submission")
     @PutMapping("/api1/changename")
     public String ChangeN(@RequestBody RequestChangeName req){
@@ -619,6 +629,7 @@ public class WebController {
 		Connection con;
 		try {
 			con = DBMS.getConnection();
+			//System.out.println(cname+" "+nname+" "+email+" "+password);
 			String sql="update registration set name=? where email=? and password=? and name=?";
 			PreparedStatement stmt=con.prepareStatement(sql);
 			stmt.setString(1,nname);
@@ -1016,7 +1027,7 @@ public class WebController {
         aincome=req.getAIncome();
         String pinvestmentattempt="initial";
 
-        //Calculating and viewing the net gains from mutual funds investment
+        //Calculating and viewing the net gains from provident funds investment
         
         
         DatabaseConnection DBMS=new DatabaseConnection("jdbc:mysql://localhost:3306/capstone", "root", "root");
@@ -1071,5 +1082,91 @@ public class WebController {
 		return pinvestmentattempt;
 		}
     
+  //View stock investment options for user
+    @ApiOperation(value = "Form submission")
+    //@CrossOrigin(origins = "http://localhost:3000")
+    @PostMapping("/api1/stocks")
+    public String Stocks(@RequestBody RequestStocks req){
+        final String email;
+        final String password;
+        final double ia;
+        final double mi;
+        final String sn;
+       
+        email = req.getEmail();
+        password = req.getPassword();
+        ia=req.getIA();
+        mi=req.getMI();
+        sn=req.getSN();
+        
+        System.out.println(email+" "+password+" "+mi+" "+ia+" "+sn);
+        
+        String stockattempt="initial";
+        
+        DatabaseConnection DBMS=new DatabaseConnection("jdbc:mysql://localhost:3306/capstone", "root", "root");
+		Connection con, con2;
+		try {
+			con = DBMS.getConnection();
+			String sql="select * from registration where email=? and password=?;";
+			PreparedStatement stmt=con.prepareStatement(sql);
+			stmt.setString(1,email);
+			stmt.setString(2,password);
+			ResultSet rs=stmt.executeQuery();
+			if(rs.next()==false)
+			{
+				stockattempt="No such user exists.";
+				System.out.println(stockattempt);
+			}
+			else {
+				rs.previous();
+				while(rs.next())
+				{
+					stockattempt="This user exists in the system.";
+					if(ia>(0.2*mi))
+					{
+						stockattempt=stockattempt+"\n"+"The investment amount is greater than 20% of your monthly salary. It is advised to invest less than or equal to 20% of your monthly salary.";
+					    System.out.println(stockattempt);
+					}
+					else {
+					con2 = DBMS.getConnection();
+					String sql2="select * from stocks where stock_name=?;";
+					PreparedStatement stmt2=con2.prepareStatement(sql2);
+					stmt2.setString(1,sn);
+					ResultSet rs2=stmt2.executeQuery();
+					if(rs2.next()==false)
+					{
+						stockattempt="No such stock exists.";
+						System.out.println(stockattempt);
+					}
+					else {
+						rs2.previous();
+						while(rs2.next())
+						{
+							final double stock_price;
+					        final double change_percent;
+					        final double avg_change_percent;
+							stock_price=rs2.getDouble(2);
+							change_percent=rs2.getDouble(3);
+							avg_change_percent=rs2.getDouble(4);
+							
+							if(stock_price>ia)
+							{
+								stockattempt=stockattempt+"\n"+"You cannot invest in this stock as the price of a share is Rs. "+stock_price+" and is greater than your investment amount.";
+							}
+							else {
+								stockattempt=stockattempt+"\n"+"You can invest in this stock. The price of a share is Rs. "+stock_price+". The value of this stock has increased by "+change_percent+"% in the past 5 years. According to previous years' increase percentage, average increase in the investment made by you would be Rs. "+(ia*(avg_change_percent/100))+" in a year, percentage of increase being "+avg_change_percent+"%";
+							}
+						}
+					DBMS.closeConnection(stmt2, con2);
+					System.out.println(stockattempt);
+				}
+			}
+		    }
+			DBMS.closeConnection(stmt, con);
+		}} catch (SQLException s) {
+			System.out.println(s.getMessage());
+		}
+		return stockattempt;
+    }
     
 }
