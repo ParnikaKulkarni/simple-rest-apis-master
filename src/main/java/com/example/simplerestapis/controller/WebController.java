@@ -23,6 +23,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.example.simplerestapis.models.RequestAdminLogin;
+import com.example.simplerestapis.models.RequestBonds;
 import com.example.simplerestapis.models.RequestChangeEmail;
 import com.example.simplerestapis.models.RequestChangeName;
 import com.example.simplerestapis.models.RequestChangePassword;
@@ -947,7 +948,7 @@ public class WebController {
     
     
     
-  //View gains from mutual funds investment
+  //View net gains from mutual funds investment
     @ApiOperation(value = "Form submission")
     //@CrossOrigin(origins = "http://localhost:3000")
     @PostMapping("/api1/mutualfunds")
@@ -1012,7 +1013,7 @@ public class WebController {
     
     
     
-  //View gains from provident funds investment
+  //View net gains from provident funds investment
     @ApiOperation(value = "Form submission")
     //@CrossOrigin(origins = "http://localhost:3000")
     @PostMapping("/api1/providentfunds")
@@ -1082,7 +1083,7 @@ public class WebController {
 		return pinvestmentattempt;
 		}
     
-  //View stock investment options for user
+  //View net gains from stock investment
     @ApiOperation(value = "Form submission")
     //@CrossOrigin(origins = "http://localhost:3000")
     @PostMapping("/api1/stocks")
@@ -1102,6 +1103,8 @@ public class WebController {
         System.out.println(email+" "+password+" "+mi+" "+ia+" "+sn);
         
         String stockattempt="initial";
+        
+      //Calculating and viewing the net gains from stocks investment
         
         DatabaseConnection DBMS=new DatabaseConnection("jdbc:mysql://localhost:3306/capstone", "root", "root");
 		Connection con, con2;
@@ -1169,4 +1172,127 @@ public class WebController {
 		return stockattempt;
     }
     
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+  //View net gains from bond investment
+    @ApiOperation(value = "Form submission")
+    //@CrossOrigin(origins = "http://localhost:3000")
+    @PostMapping("/api1/bonds")
+    public String Stocks(@RequestBody RequestBonds req){
+        final String email;
+        final String password;
+        final long ia;
+        final long savings;
+        final String bn;
+       
+        email = req.getEmail();
+        password = req.getPassword();
+        ia=req.getIA();
+        savings=req.getSavings();
+        bn=req.getBN();
+        
+        System.out.println(email+" "+password+" "+savings+" "+ia+" "+bn);
+        
+        String bondattempt="initial";
+        
+      //Calculating and viewing the net gains from bonds investment
+        
+        DatabaseConnection DBMS=new DatabaseConnection("jdbc:mysql://localhost:3306/capstone", "root", "root");
+		Connection con, con2;
+		try {
+			con = DBMS.getConnection();
+			String sql="select * from registration where email=? and password=?;";
+			PreparedStatement stmt=con.prepareStatement(sql);
+			stmt.setString(1,email);
+			stmt.setString(2,password);
+			ResultSet rs=stmt.executeQuery();
+			if(rs.next()==false)
+			{
+				bondattempt="No such user exists.";
+				System.out.println(bondattempt);
+			}
+			else {
+				rs.previous();
+				while(rs.next())
+				{
+					bondattempt="This user exists in the system.";
+					if(ia>(0.3*savings))
+					{
+						bondattempt=bondattempt+"\n"+"The investment amount is greater than 30% of your total savings. It is advised to invest less than or equal to 30% of your savings.";
+					    System.out.println(bondattempt);
+					}
+					else {
+					con2 = DBMS.getConnection();
+					String sql2="select * from bonds where bond_name=?;";
+					PreparedStatement stmt2=con2.prepareStatement(sql2);
+					stmt2.setString(1,bn);
+					ResultSet rs2=stmt2.executeQuery();
+					if(rs2.next()==false)
+					{
+						bondattempt="No such bond exists.";
+						System.out.println(bondattempt);
+					}
+					else {
+						rs2.previous();
+						while(rs2.next())
+						{
+							final long bond_price;
+					        final double interest_rate;
+					        final int months;
+							bond_price=rs2.getLong(2);
+							interest_rate=rs2.getDouble(3);
+							months=rs2.getInt(4);
+							
+							final DecimalFormat decimals = new DecimalFormat("0.00");
+							
+							if(bond_price>ia)
+							{
+								bondattempt=bondattempt+"\n"+"You cannot invest in this bond as the face value is Rs. "+bond_price+" and is greater than your investment amount.";
+							}
+							else {
+								int years=months/12;
+								int months2=months%12;
+								if(years<1 && months==1)
+								{
+									bondattempt=bondattempt+"\n"+"You can invest in this bond. The face value is Rs. "+bond_price+". The time till maturity of this bond is "+months2+" month. You will gain Rs. "+decimals.format(bond_price*(interest_rate/100)*(double)((double)months/(double)12))+" after this time period, the interest rate on face value being "+interest_rate+"%.";
+								}
+								else if(years<1 && months>1)
+								{
+									bondattempt=bondattempt+"\n"+"You can invest in this bond. The face value is Rs. "+bond_price+". The time till maturity of this bond is "+months2+" months. You will gain Rs. "+decimals.format(bond_price*(interest_rate/100)*(double)((double)months/(double)12))+" after this time period, the interest rate on face value being "+interest_rate+"%.";
+								}
+								else if(years==1 && months2==0)
+								{
+									bondattempt=bondattempt+"\n"+"You can invest in this bond. The face value is Rs. "+bond_price+". The time till maturity of this bond is "+years+" year. You will gain Rs. "+decimals.format(bond_price*(interest_rate/100)*(double)((double)months/(double)12))+" after this time period, the interest rate on face value being "+interest_rate+"%.";
+								}
+								else if(years>1 && months2==0)
+								{
+									bondattempt=bondattempt+"\n"+"You can invest in this bond. The face value is Rs. "+bond_price+". The time till maturity of this bond is "+years+" years. You will gain Rs. "+decimals.format(bond_price*(interest_rate/100)*(double)((double)months/(double)12))+" after this time period, the interest rate on face value being "+interest_rate+"%.";
+								}
+								else if(years>1 && months2==1){
+									bondattempt=bondattempt+"\n"+"You can invest in this bond. The face value is Rs. "+bond_price+". The time till maturity of this bond is "+years+" years and "+months2+" month. You will gain Rs. "+decimals.format(bond_price*(interest_rate/100)*(double)((double)months/(double)12))+" after this time period, the interest rate on face value being "+interest_rate+"%.";
+								}
+								else {
+									bondattempt=bondattempt+"\n"+"You can invest in this bond. The face value is Rs. "+bond_price+". The time till maturity of this bond is "+years+" years and "+months2+" months. You will gain Rs. "+decimals.format(bond_price*(interest_rate/100)*(double)((double)months/(double)12))+" after this time period, the interest rate on face value being "+interest_rate+"%.";
+								}
+							}
+						}
+					DBMS.closeConnection(stmt2, con2);
+					System.out.println(bondattempt);
+				}
+			}
+		    }
+			DBMS.closeConnection(stmt, con);
+		}} catch (SQLException s) {
+			System.out.println(s.getMessage());
+		}
+		return bondattempt;
+    }
 }
