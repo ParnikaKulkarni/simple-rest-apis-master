@@ -35,6 +35,7 @@ import com.example.simplerestapis.models.RequestMutualFunds;
 import com.example.simplerestapis.models.RequestNetSavings;
 import com.example.simplerestapis.models.RequestProvidentFunds;
 import com.example.simplerestapis.models.RequestReactivateAccount;
+import com.example.simplerestapis.models.RequestRealEstate;
 import com.example.simplerestapis.models.RequestRegistration;
 import com.example.simplerestapis.models.RequestStocks;
 import com.example.simplerestapis.models.RequestViewDetails;
@@ -1186,7 +1187,7 @@ public class WebController {
     @ApiOperation(value = "Form submission")
     //@CrossOrigin(origins = "http://localhost:3000")
     @PostMapping("/api1/bonds")
-    public String Stocks(@RequestBody RequestBonds req){
+    public String Bonds(@RequestBody RequestBonds req){
         final String email;
         final String password;
         final long ia;
@@ -1294,5 +1295,93 @@ public class WebController {
 			System.out.println(s.getMessage());
 		}
 		return bondattempt;
+    }
+    
+    
+    
+    
+  //View net gains from real estate investment
+    @ApiOperation(value = "Form submission")
+    //@CrossOrigin(origins = "http://localhost:3000")
+    @PostMapping("/api1/realestate")
+    public String Real_Estate(@RequestBody RequestRealEstate req){
+        final String email;
+        final String password;
+        final long budget;
+        final int bhk;
+        final String city;
+       
+        email = req.getEmail();
+        password = req.getPassword();
+        budget=req.getBudget();
+        bhk=req.getBhk();
+        city=req.getCity();
+        
+        System.out.println(email+" "+password+" "+budget+" "+bhk+" "+city);
+        
+        String realestateattempt="initial";
+        
+      //Viewing real estate investment options according to user's budget
+        
+        DatabaseConnection DBMS=new DatabaseConnection("jdbc:mysql://localhost:3306/capstone", "root", "root");
+		Connection con, con2;
+		try {
+			con = DBMS.getConnection();
+			String sql="select * from registration where email=? and password=?;";
+			PreparedStatement stmt=con.prepareStatement(sql);
+			stmt.setString(1,email);
+			stmt.setString(2,password);
+			ResultSet rs=stmt.executeQuery();
+			if(rs.next()==false)
+			{
+				realestateattempt="No such user exists.";
+				System.out.println(realestateattempt);
+			}
+			else {
+				rs.previous();
+				while(rs.next())
+				{
+					realestateattempt="This user exists in the system.";
+					
+					con2 = DBMS.getConnection();
+					String sql2="select * from real_estate where city=? and bhk=?;";
+					PreparedStatement stmt2=con2.prepareStatement(sql2);
+					stmt2.setString(1,city);
+					stmt2.setInt(2,bhk);
+					ResultSet rs2=stmt2.executeQuery();
+					if(rs2.next()==false)
+					{
+						realestateattempt="No such option exists.";
+						System.out.println(realestateattempt);
+					}
+					else {
+						rs2.previous();
+						while(rs2.next())
+						{
+							final long lower_limit;
+					        final long upper_limit;
+							lower_limit=rs2.getLong(3);
+							upper_limit=rs2.getLong(4);
+							
+							if(lower_limit>budget)
+							{
+								realestateattempt=realestateattempt+"\n"+"You cannot invest in a "+bhk+" bhk house in "+city+" as the price ranges from Rs. "+lower_limit+" to Rs. "+upper_limit+" and has a greater cost than your budget.";
+							}
+							else if(budget<=((lower_limit+upper_limit)/2)){
+								realestateattempt=realestateattempt+"\n"+"You can invest in a "+bhk+" bhk house in "+city+" as the price ranges from Rs. "+lower_limit+" to Rs. "+upper_limit+", which is in your budget. You will be able to afford a good enough house.";
+							}
+							else {
+								realestateattempt=realestateattempt+"\n"+"You can invest in a "+bhk+" bhk house in "+city+" as the price ranges from Rs. "+lower_limit+" to Rs. "+upper_limit+", which is in your budget. You will be able to afford a good luxury house.";
+						    }
+					DBMS.closeConnection(stmt2, con2);
+					System.out.println(realestateattempt);
+				}
+			}
+		    }
+			DBMS.closeConnection(stmt, con);
+		}} catch (SQLException s) {
+			System.out.println(s.getMessage());
+		}
+		return realestateattempt;
     }
 }
