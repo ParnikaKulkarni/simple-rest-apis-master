@@ -27,6 +27,7 @@ import com.example.simplerestapis.models.RequestBonds;
 import com.example.simplerestapis.models.RequestChangeEmail;
 import com.example.simplerestapis.models.RequestChangeName;
 import com.example.simplerestapis.models.RequestChangePassword;
+import com.example.simplerestapis.models.RequestCurrencies;
 import com.example.simplerestapis.models.RequestDeactivateAccount;
 import com.example.simplerestapis.models.RequestDeleteAccount;
 import com.example.simplerestapis.models.RequestExpenditure;
@@ -1383,5 +1384,91 @@ public class WebController {
 			System.out.println(s.getMessage());
 		}
 		return realestateattempt;
+    }
+    
+    
+    
+    
+  //View user's current savings in different currencies
+    @ApiOperation(value = "Form submission")
+    //@CrossOrigin(origins = "http://localhost:3000")
+    @PostMapping("/api1/currencies")
+    public String Currencies(@RequestBody RequestCurrencies req){
+        final String email;
+        final String password;
+        final long savings;
+        final String currency;
+        
+        email = req.getEmail();
+        password = req.getPassword();
+        savings=req.getSavings();
+        currency=req.getCurrency();
+
+        System.out.println(email+" "+password+" "+savings+" "+currency);
+        
+        String currencyattempt="initial";
+        
+      //Viewing user's savings in different currencies
+        
+        DatabaseConnection DBMS=new DatabaseConnection("jdbc:mysql://localhost:3306/capstone", "root", "root");
+		Connection con, con2;
+		try {
+			con = DBMS.getConnection();
+			String sql="select * from registration where email=? and password=?;";
+			PreparedStatement stmt=con.prepareStatement(sql);
+			stmt.setString(1,email);
+			stmt.setString(2,password);
+			ResultSet rs=stmt.executeQuery();
+			if(rs.next()==false)
+			{
+				currencyattempt="No such user exists.";
+				System.out.println(currencyattempt);
+			}
+			else {
+				rs.previous();
+				while(rs.next())
+				{
+					currencyattempt="This user exists in the system.";
+					
+					con2 = DBMS.getConnection();
+					String sql2="select * from currencies where currency_name=?;";
+					PreparedStatement stmt2=con2.prepareStatement(sql2);
+					stmt2.setString(1,currency);
+					ResultSet rs2=stmt2.executeQuery();
+					if(rs2.next()==false)
+					{
+						currencyattempt="No such option exists.";
+						System.out.println(currencyattempt);
+					}
+					else {
+						rs2.previous();
+						while(rs2.next())
+						{
+							final double inr_value;
+							inr_value=rs2.getDouble(2);
+							final DecimalFormat decimals = new DecimalFormat("0.00");
+							if(savings>0 && (double)savings/(double)inr_value>1)
+							{
+								currencyattempt=currencyattempt+"\n"+"You have total savings of Rs. "+savings+". This amount when converted from Indian Rupee to "+currency+" is "+decimals.format((double)savings/(double)inr_value)+" "+currency+"s.";
+							}
+							else if(savings>0)
+							{
+								currencyattempt=currencyattempt+"\n"+"You have total savings of Rs. "+savings+". This amount when converted from Indian Rupee to "+currency+" is "+decimals.format((double)savings/(double)inr_value)+" "+currency+".";
+							}
+							else
+							{
+								currencyattempt=currencyattempt+"\n"+"The value entered by user in total savings is invalid.";
+							}
+						}
+					DBMS.closeConnection(stmt2, con2);
+					System.out.println(currencyattempt);
+				}
+			}
+		    }
+			DBMS.closeConnection(stmt, con);
+		} catch (SQLException s) {
+			System.out.println(s.getMessage());
+		}
+		return currencyattempt;
     }
 }
