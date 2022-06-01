@@ -32,6 +32,7 @@ import com.example.simplerestapis.models.RequestDeactivateAccount;
 import com.example.simplerestapis.models.RequestDeleteAccount;
 import com.example.simplerestapis.models.RequestExpenditure;
 import com.example.simplerestapis.models.RequestLogin;
+import com.example.simplerestapis.models.RequestLogs;
 import com.example.simplerestapis.models.RequestMutualFunds;
 import com.example.simplerestapis.models.RequestNetSavings;
 import com.example.simplerestapis.models.RequestProvidentFunds;
@@ -762,7 +763,7 @@ public class WebController {
   //View net user savings
     @ApiOperation(value = "Form submission")
     //@CrossOrigin(origins = "http://localhost:3000")
-    @PostMapping("/api1/netsavings")
+    @PutMapping("/api1/netsavings")
     public String NetSavings(@RequestBody RequestNetSavings req){
         final String email;
         final String password;
@@ -773,14 +774,14 @@ public class WebController {
         salary=req.getSalary();
         expenditure=req.getExpenditure();
         
-        String savingsattempt="initial";
+        String savingsattempt="";
         long savings;
         
         //Calculating and viewing the net user savings since account opening
         
         
         DatabaseConnection DBMS=new DatabaseConnection("jdbc:mysql://localhost:3306/capstone", "root", "root");
-		Connection con;
+		Connection con, con2, con3;
 		try {
 			con = DBMS.getConnection();
 			String sql="select cbalance, month, year from registration where email=? and password=?;";
@@ -798,7 +799,7 @@ public class WebController {
 				String userinfo="";
 				while(rs.next())
 				{
-					savingsattempt="This user exists in the system.";
+					//savingsattempt="This user exists in the system.";
 					long ibalance=Long.parseLong(rs.getString(1));
 					int month=rs.getInt(2);
 					int year=rs.getInt(3);
@@ -809,13 +810,13 @@ public class WebController {
 					        LocalDate.parse(date2).withDayOfMonth(1));
 					if(salary<=expenditure)
 					{
-						savingsattempt=savingsattempt+"\n"+"Your monthly expenditure is greater than or equal to your monthly salary. Please make use of our application to monitor your expenses and improve your savings.";
+						savingsattempt=savingsattempt+"Your monthly expenditure is greater than or equal to your monthly salary. Please make use of our application to monitor your expenses and improve your savings.";
 						System.out.println(savingsattempt);
 					}
 					else {
 						System.out.println(monthsBetween);
 						savings=(salary-expenditure)*monthsBetween;
-						savingsattempt=savingsattempt+"\n"+"Your net savings are calculated to be Rs. "+savings+" from the time you registered in our application. This amount is apart from the balance of Rs. "+ibalance+" in your account at the time of registration. The net total balance in your account is Rs. "+(ibalance+savings);
+						savingsattempt=savingsattempt+"Your net savings are calculated to be Rs. "+savings+" from the time you registered in our application. This amount is apart from the balance of Rs. "+ibalance+" in your account at the time of registration. The net total balance in your account is Rs. "+(ibalance+savings);
 						System.out.println(savingsattempt);
 					}
 				}
@@ -824,6 +825,57 @@ public class WebController {
 			DBMS.closeConnection(stmt, con);
 		} catch (SQLException s) {
 			System.out.println(s.getMessage());
+		}
+		try {
+		
+		con2 = DBMS.getConnection();
+		String sql2="select * from logs where email=?;";
+		PreparedStatement stmt2=con2.prepareStatement(sql2);
+		stmt2.setString(1,email);
+		ResultSet rs2=stmt2.executeQuery();
+		if(rs2.next()==false)
+		{
+			con3 = DBMS.getConnection();
+			String sql3="INSERT INTO logs (email, savings) VALUES (?, ?);";
+			PreparedStatement stmt3=con3.prepareStatement(sql3);
+			stmt3.setString(1,email);
+			stmt3.setString(2,savingsattempt);
+			int check=stmt3.executeUpdate();
+			if(check<1)
+			{
+				System.out.println("Savings attempt not logged.");
+			}
+			else {
+				System.out.println("Savings attempt successfully logged.");
+			}
+		    DBMS.closeConnection(stmt3, con3);
+		}
+		else {
+			rs2.previous();
+			while(rs2.next())
+			{
+				con3 = DBMS.getConnection();
+				String sql3="UPDATE logs SET savings = ? WHERE email = ?;";
+				PreparedStatement stmt3=con3.prepareStatement(sql3);
+				stmt3.setString(1,savingsattempt);
+				stmt3.setString(2,email);
+				int check=stmt3.executeUpdate();
+				if(check<1)
+				{
+					System.out.println("Savings attempt not logged.");
+				}
+				else {
+					System.out.println("Savings attempt successfully logged.");
+				}
+			    DBMS.closeConnection(stmt3, con3);
+			}
+		    DBMS.closeConnection(stmt2, con2);
+
+	}
+		}
+		catch(SQLException e)
+		{
+			System.out.println(e.getMessage());
 		}
 		return savingsattempt;
 		}
@@ -834,7 +886,7 @@ public class WebController {
   //View average monthly and annual user expenditures
     @ApiOperation(value = "Form submission")
     //@CrossOrigin(origins = "http://localhost:3000")
-    @PostMapping("/api1/expenditures")
+    @PutMapping("/api1/expenditures")
     public ArrayList<String> Expenditure(@RequestBody RequestExpenditure req){
         final String email;
         final String password;
@@ -880,7 +932,8 @@ public class WebController {
         System.out.println(other);
 
         ArrayList<String> results=new ArrayList<String>();
-        String avgexpenditureattempt="initial";
+        String results2="";
+        String avgexpenditureattempt="";
         long monthlye;
         long annuale;
         double percentagesaved;
@@ -890,7 +943,7 @@ public class WebController {
         
         
         DatabaseConnection DBMS=new DatabaseConnection("jdbc:mysql://localhost:3306/capstone", "root", "root");
-		Connection con;
+		Connection con, con2, con3;
 		try {
 			con = DBMS.getConnection();
 			String sql="select * from registration where email=? and password=?;";
@@ -901,6 +954,7 @@ public class WebController {
 			if(rs.next()==false)
 			{
 				avgexpenditureattempt="No such user exists.";
+				results2=avgexpenditureattempt;
 				results.add(avgexpenditureattempt);
 				System.out.println(avgexpenditureattempt);
 			}
@@ -908,7 +962,7 @@ public class WebController {
 				rs.previous();
 				while(rs.next())
 				{
-					avgexpenditureattempt="This user exists in the system.";
+					//avgexpenditureattempt="This user exists in the system.";
 					monthlye=rent+transport+insurance+food+ce+utility+travel+personal+loan+cce+other;
 					System.out.println(monthlye);
 					annuale=monthlye*12;
@@ -916,9 +970,13 @@ public class WebController {
 					results.add(avgexpenditureattempt);
 					results.add(monthlye+"");
 					results.add(annuale+"");
+					results2=avgexpenditureattempt;
+					results2=results2+"Your total monthly expenditure is Rs. "+monthlye;
+					results2=results2+"\n"+"Your total annual expenditure is Rs. "+annuale;
 					if(annuale>salary)
 					{
 						results.add("You are spending more that you are earning per year. Please make use of our application to monitor your expenses and improve your savings.");
+					    results2=results2+"\n"+"You are spending more that you are earning per year. Please make use of our application to monitor your expenses and improve your savings.";
 					}
 					else {
 						percentagespent=((double)annuale/(double)salary)*100;
@@ -928,10 +986,13 @@ public class WebController {
 						if(pspent.contentEquals("100.00"))
 						{
 							results.add("You are spending all your earnings on expenses. Please make use of our application to monitor your expenses and improve your savings.");
+							results2=results2+"\n"+"You are spending all your earnings on expenses. Please make use of our application to monitor your expenses and improve your savings.";
 						}
 						else {
 							results.add(pspent+"");
 							results.add(psaved+"");
+							results2=results2+"\n"+"Percentage of earnings spent is "+pspent;
+							results2=results2+"\n"+"Percentage of earnings saved is "+psaved;
 						}
 					}
 				}
@@ -942,6 +1003,62 @@ public class WebController {
 			System.out.println(s.getMessage());
 			results.add(s.getMessage());
 		}
+		
+		
+		
+		try {
+			
+			con2 = DBMS.getConnection();
+			String sql2="select * from logs where email=?;";
+			PreparedStatement stmt2=con2.prepareStatement(sql2);
+			stmt2.setString(1,email);
+			ResultSet rs2=stmt2.executeQuery();
+			if(rs2.next()==false)
+			{
+				con3 = DBMS.getConnection();
+				String sql3="INSERT INTO logs (email, expenses) VALUES (?, ?);";
+				PreparedStatement stmt3=con3.prepareStatement(sql3);
+				stmt3.setString(1,email);
+				stmt3.setString(2,results2);
+				int check=stmt3.executeUpdate();
+				if(check<1)
+				{
+					System.out.println("Expenditure results not logged.");
+				}
+				else {
+					System.out.println("Expenditure results successfully logged.");
+				}
+			    DBMS.closeConnection(stmt3, con3);
+			}
+			else {
+				rs2.previous();
+				while(rs2.next())
+				{
+					con3 = DBMS.getConnection();
+					String sql3="UPDATE logs SET expenses = ? WHERE email = ?;";
+					PreparedStatement stmt3=con3.prepareStatement(sql3);
+					stmt3.setString(1,results2);
+					stmt3.setString(2,email);
+					int check=stmt3.executeUpdate();
+					if(check<1)
+					{
+						System.out.println("Expenditure results not logged.");
+					}
+					else {
+						System.out.println("Expenditure results successfully logged.");
+					}
+				    DBMS.closeConnection(stmt3, con3);
+				}
+			    DBMS.closeConnection(stmt2, con2);
+
+		}
+			}
+			catch(SQLException e)
+			{
+				System.out.println(e.getMessage());
+			}
+		
+		
 		return results;
 		} 
     
@@ -1471,4 +1588,89 @@ public class WebController {
 		}
 		return currencyattempt;
     }
+    
+    
+    
+    
+  //Display user's logs
+    @ApiOperation(value = "Form submission")
+    //@CrossOrigin(origins = "http://localhost:3000")
+    @PostMapping("/api1/logs")
+    public String Logs(@RequestBody RequestLogs req){
+        final String email;
+        final String password;
+        
+        email = req.getEmail();
+        password = req.getPassword();
+
+        System.out.println(email+" "+password);
+        
+        String logsattempt="";
+        
+      //Displaying user's logs
+        
+        DatabaseConnection DBMS=new DatabaseConnection("jdbc:mysql://localhost:3306/capstone", "root", "root");
+		Connection con, con2;
+		try {
+			con = DBMS.getConnection();
+			String sql="select * from registration where email=? and password=?;";
+			PreparedStatement stmt=con.prepareStatement(sql);
+			stmt.setString(1,email);
+			stmt.setString(2,password);
+			ResultSet rs=stmt.executeQuery();
+			if(rs.next()==false)
+			{
+				logsattempt="No such user exists.";
+				System.out.println(logsattempt);
+			}
+			else {
+				rs.previous();
+				while(rs.next())
+				{
+					//logsattempt="This user exists in the system.";
+					
+					con2 = DBMS.getConnection();
+					String sql2="select * from logs where email=?;";
+					PreparedStatement stmt2=con2.prepareStatement(sql2);
+					stmt2.setString(1,email);
+					ResultSet rs2=stmt2.executeQuery();
+					if(rs2.next()==false)
+					{
+						logsattempt=logsattempt+"No logs exist for this user.";
+						System.out.println(logsattempt);
+					}
+					else {
+						rs2.previous();
+						while(rs2.next())
+						{
+							final String savings;
+							final String expenses;
+							savings=rs2.getString(2);
+							expenses=rs2.getString(3);
+							System.out.println(savings+"\n"+expenses);
+							if(savings==null && expenses!=null)
+							{
+								logsattempt=logsattempt+"No savings logged for this user."+"\n"+expenses;
+							}
+							else if(savings!=null && expenses==null)
+							{
+								logsattempt=logsattempt+savings+"\n"+"No expenses logged for this user.";
+							}
+							else {
+								logsattempt=logsattempt+savings;
+								logsattempt=logsattempt+"\n"+expenses;
+							}
+						}
+					DBMS.closeConnection(stmt2, con2);
+					System.out.println(logsattempt);
+				}
+			}
+		    }
+			DBMS.closeConnection(stmt, con);
+		} catch (SQLException s) {
+			System.out.println(s.getMessage());
+		}
+		return logsattempt;
+    }
+    
 }
