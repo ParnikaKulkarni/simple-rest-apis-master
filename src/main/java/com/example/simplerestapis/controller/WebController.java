@@ -31,6 +31,7 @@ import com.example.simplerestapis.models.RequestCurrencies;
 import com.example.simplerestapis.models.RequestDeactivateAccount;
 import com.example.simplerestapis.models.RequestDeleteAccount;
 import com.example.simplerestapis.models.RequestExpenditure;
+import com.example.simplerestapis.models.RequestGoals;
 import com.example.simplerestapis.models.RequestLogin;
 import com.example.simplerestapis.models.RequestLogs;
 import com.example.simplerestapis.models.RequestMutualFunds;
@@ -1673,4 +1674,139 @@ public class WebController {
 		return logsattempt;
     }
     
+    
+    
+    
+  //Setting goals for user
+    @ApiOperation(value = "Form submission")
+    //@CrossOrigin(origins = "http://localhost:3000")
+    @PostMapping("/api1/goals")
+    public String Goals(@RequestBody RequestGoals req){
+        final String email;
+        final String password;
+        final long savings;
+        final String goal;
+        final long mincome;
+        final long price;
+        
+        email = req.getEmail();
+        password = req.getPassword();
+        savings=req.getSavings();
+        goal=req.getGoal();
+        mincome=req.getMIncome();
+        price=req.getPrice();
+
+        System.out.println(email+" "+password+" "+savings+" "+goal+" "+mincome+" "+price);
+        
+        String goalattempt="";
+        
+      //Displaying goal setting to user for different goals
+        
+        DatabaseConnection DBMS=new DatabaseConnection("jdbc:mysql://localhost:3306/capstone", "root", "root");
+		Connection con, con2;
+		try {
+			con = DBMS.getConnection();
+			String sql="select * from registration where email=? and password=?;";
+			PreparedStatement stmt=con.prepareStatement(sql);
+			stmt.setString(1,email);
+			stmt.setString(2,password);
+			ResultSet rs=stmt.executeQuery();
+			if(rs.next()==false)
+			{
+				goalattempt="No such user exists.";
+				System.out.println(goalattempt);
+			}
+			else {
+				rs.previous();
+				while(rs.next())
+				{
+					//goalattempt="This user exists in the system.";
+					
+					final DecimalFormat decimals = new DecimalFormat("0");
+					final DecimalFormat decimals2 = new DecimalFormat("0.00");
+					
+					//Goal setting for car
+					if(goal.contentEquals("Car"))
+					{
+						double p=0.8*price;
+						double r=0.08/12;
+						int n=48;
+						double emi=(p*r*Math.pow((1+r),(n)))/(Math.pow((1+r),(n))-1);
+						System.out.println("EMI = "+emi);
+						if(6*mincome<price)
+						{
+							goalattempt="It is advised to buy a car with price less than or equal to half of your annual salary.";
+						}
+						else if(savings<(0.2*price))
+						{
+							goalattempt="Following the 20/4/10 rule, you should be able to pay 20% of the price of car as down payment. As your savings for down payment are less than Rs. "+(0.2*price)+" (20% of car price), you will have to save up more before buying the car.";
+						}
+						else if(emi>0.1*mincome)
+						{
+							goalattempt="Following the 20/4/10 rule, you should be able to pay the remaining 80% of the price of the car as EMIs in 4 years. The EMI should be less than or equal to 10% of your monthly income. As 10% of your monthly income is less than Rs. "+decimals2.format(emi)+" (EMI for payment of car price, after down payment), you won't be able to buy this car. You are advised to buy a car with lower price.";
+						}
+						else {
+							goalattempt="Since this car is within budget according to your annual income, and the conditions for the 20/4/10 rule are getting fulfilled (you are able to pay 20% of the price of car as down payment, you are able to pay the remaining 80% of the price of the car as EMIs in 4 years, the EMI being less than or equal to 10% of your monthly income); You can buy this car with an EMI of Rs. "+decimals2.format(emi)+".";
+						}
+					}
+					
+					
+					//Goal setting for house
+					else if(goal.contentEquals("House"))
+					{
+						double p=0.6*price;
+						double r=0.08/12;
+						int n=240;
+						double emi=(p*r*Math.pow((1+r),(n)))/(Math.pow((1+r),(n))-1);
+						System.out.println("EMI = "+emi);
+						if(3*12*mincome<price)
+						{
+							goalattempt="Following the 3/20/30/40 rule, you should buy a house with price less than or equal to 3 times your annual salary.";
+						}
+						else if(savings<(0.4*price))
+						{
+							goalattempt="Following the 3/20/30/40 rule, you should be able to pay 40% of the price of house as down payment. As your savings for down payment are less than Rs. "+(0.4*price)+" (40% of house price), you will have to save up more before buying the house.";
+						}
+						else if(emi>0.3*mincome)
+						{
+							goalattempt="Following the 3/20/30/40 rule, you should be able to pay the remaining 60% of the price of the house as EMIs in 20 years. The EMI should be less than or equal to 30% of your monthly income. As 30% of your monthly income is less than Rs. "+decimals2.format(emi)+" (EMI for payment of house price, after down payment), you won't be able to buy this house. You are advised to buy a house with lower price.";
+						}
+						else {
+							goalattempt="Since this house is within budget as the conditions for the 3/20/30/40 rule are getting fulfilled (you are buying a house with price less than or equal to 3 times your annual salary, you are able to pay 40% of the price of house as down payment, you are able to pay the remaining 60% of the price of the house as EMIs in 20 years, the EMI being less than or equal to 30% of your monthly income); You can buy this house with an EMI of Rs. "+decimals2.format(emi)+".";
+						}
+					}
+					else if(goal.contentEquals("Other"))
+					{
+						if(savings>=price)
+						{
+							goalattempt="You can buy the thing you want, as you have enough savings for this purchase.";
+						}
+						else {
+							long remaining=price-savings;
+							double months=Double.parseDouble(decimals.format(remaining/(0.1*mincome)));
+							if(months>1)
+							{
+								goalattempt="You can buy the thing you want in the next "+(int)months+" months by saving 10% of your monthly income every month, as you will have enough savings for this purchase.";
+							}
+							else if(months==1){
+								goalattempt="You can buy the thing you want in the next "+(int)months+" month by saving 10% of your monthly income, as you will have enough savings for this purchase.";
+							}
+							else if(months<1)
+							{
+								goalattempt="You can buy the thing you want within this month, as you will have enough savings for this purchase.";
+							}
+						}
+					}
+					else {
+						goalattempt="No such option exists.";
+					}
+					System.out.println(goalattempt);
+				}
+			}
+			DBMS.closeConnection(stmt, con);
+		} catch (SQLException s) {
+			System.out.println(s.getMessage());
+		}
+		return goalattempt;
+    }
 }

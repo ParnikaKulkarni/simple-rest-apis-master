@@ -44,7 +44,7 @@ public class RequestCurrencies {
         return this.currency;
     }
 
-    public void setCuurency(String currency){
+    public void setCurrency(String currency){
         this.currency = currency;
     }
 }
